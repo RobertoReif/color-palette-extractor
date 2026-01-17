@@ -491,7 +491,48 @@
             }, 100);
         }
 
-        function kMeans(pixels, k, maxIterations = 30) {
+        function kMeans(pixels, k, maxIterations = 30, numRuns = 3) {
+            let bestCentroids = null;
+            let bestInertia = Infinity;
+
+            // Run K-means multiple times and select the best result
+            for (let run = 0; run < numRuns; run++) {
+                const result = kMeansSingleRun(pixels, k, maxIterations);
+
+                if (result.inertia < bestInertia) {
+                    bestInertia = result.inertia;
+                    bestCentroids = result.centroids;
+                }
+            }
+
+            // Sort colors by frequency (cluster size)
+            const clusterSizes = Array.from({ length: k }, () => 0);
+            for (const pixel of pixels) {
+                let minDist = Infinity;
+                let clusterIdx = 0;
+
+                for (let i = 0; i < k; i++) {
+                    const dist = euclideanDistance(pixel, bestCentroids[i]);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        clusterIdx = i;
+                    }
+                }
+
+                clusterSizes[clusterIdx]++;
+            }
+
+            const colorsWithSizes = bestCentroids.map((color, i) => ({
+                color,
+                size: clusterSizes[i]
+            }));
+
+            colorsWithSizes.sort((a, b) => b.size - a.size);
+
+            return colorsWithSizes.map(item => item.color);
+        }
+
+        function kMeansSingleRun(pixels, k, maxIterations = 30) {
             // Initialize centroids randomly
             let centroids = [];
             const usedIndices = new Set();
@@ -552,31 +593,22 @@
                 iterations++;
             }
 
-            // Sort colors by frequency (cluster size)
-            const clusterSizes = Array.from({ length: k }, () => 0);
+            // Calculate inertia (sum of squared distances)
+            let inertia = 0;
             for (const pixel of pixels) {
                 let minDist = Infinity;
-                let clusterIdx = 0;
 
                 for (let i = 0; i < k; i++) {
                     const dist = euclideanDistance(pixel, centroids[i]);
                     if (dist < minDist) {
                         minDist = dist;
-                        clusterIdx = i;
                     }
                 }
 
-                clusterSizes[clusterIdx]++;
+                inertia += minDist * minDist;
             }
 
-            const colorsWithSizes = centroids.map((color, i) => ({
-                color,
-                size: clusterSizes[i]
-            }));
-
-            colorsWithSizes.sort((a, b) => b.size - a.size);
-
-            return colorsWithSizes.map(item => item.color);
+            return { centroids, inertia };
         }
 
         function euclideanDistance(a, b) {
