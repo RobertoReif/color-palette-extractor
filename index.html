@@ -386,6 +386,26 @@
         // Extract button
         extractBtn.addEventListener('click', extractColors);
 
+        // Load default image on page load
+        function loadDefaultImage() {
+            const defaultImagePath = 'Gemini-KMeans-Image.png';
+            currentImage = new Image();
+            currentImage.onload = () => {
+                previewImg.src = defaultImagePath;
+                imagePreview.classList.add('active');
+                extractBtn.disabled = false;
+                // Auto-extract colors with default image
+                extractColors();
+            };
+            currentImage.onerror = () => {
+                console.log('Default image not found, starting without it');
+            };
+            currentImage.src = defaultImagePath;
+        }
+
+        // Load default image when page loads
+        window.addEventListener('load', loadDefaultImage);
+
         function handleFileSelect(e) {
             const file = e.target.files[0];
             if (file) {
